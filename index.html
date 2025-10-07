@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kithsiri Athulathmudali | Entrepreneur, Author, Diplomat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Load required Firebase libraries for the Gemini API call -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the execution environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIzaSy...", projectId: "test-project-id" }; // Fallback config
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth;
+        
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Sign in using custom token or anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                console.log("Firebase initialized and signed in.");
+
+                // Initialize the Intersection Observer for animations after successful initialization
+                setupObserver();
+
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+            }
+        }
+
+        // Global function for the LLM call
+        async function callGemini(prompt, isSummary = false, summaryIndex = null) {
+            const outputId = isSummary ? `summarize-output-text-${summaryIndex}` : 'ask-output-text';
+            const audioOutputId = isSummary ? `summarize-output-audio-${summaryIndex}` : 'ask-output-audio';
+            const containerId = isSummary ? `summarize-output-${summaryIndex}` : 'ask-output';
+
+            const outputTextElement = document.getElementById(outputId);
+            const outputAudioElement = document.getElementById(audioOutputId);
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const containerElement = document.getElementById(containerId);
+
+            // Hide previous audio and show loading state
+            outputTextElement.innerText = "Generating response, please wait...";
+            outputAudioElement.innerHTML = "";
+            containerElement.classList.remove('hidden');
+            if (!isSummary) {
+                 loadingIndicator.classList.remove('hidden');
+            }
+            
+            const systemPrompt = isSummary 
+                ? "You are an expert literary reviewer. Provide a concise, engaging summary (max 50 words) of the following book based on its title and description. Focus on key themes."
+                : "You are Kithsiri Athulathmudali's personal assistant. Answer the user's question about Kithsiri Athulathmudali's life or work based on your general knowledge. Be professional, concise, and informative. If you don't know the answer, politely state that the information is not available.";
+
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            try {
+                let response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
+                
+                outputTextElement.innerText = text;
+                outputTextElement.classList.remove('hidden'); // Ensure text is visible
+                outputAudioElement.innerHTML = `<button onclick="readAloud('${text.replace(/'/g, "\\'")}', '${audioOutputId}')" class="btn-primary mt-4 px-4 py-2 rounded-full text-sm">Read Aloud</button>`;
+                
+            } catch (error) {
+                console.error("Error during Gemini API call:", error);
+                outputTextElement.innerText = isSummary ? "Failed to summarize." : "Failed to get an answer.";
+            } finally {
+                if (!isSummary) {
+                    loadingIndicator.classList.add('hidden');
+                }
+            }
+        }
+
+        // Global function for TTS (Text-to-Speech)
+        async function readAloud(text, outputElementId) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+            // Helper function to convert base64 to Int16Array
+            const base64ToArrayBuffer = (base64) => {
+                const binaryString = atob(base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                // API returns signed PCM16 audio data.
+                return new Int16Array(bytes.buffer);
+            };
+
+            // Helper function to write WAV header string
+            const writeString = (view, offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+
+            // Helper function to convert PCM to WAV format
+            const pcmToWav = (pcmData, sampleRate) => {
+                const buffer = new ArrayBuffer(44 + pcmData.length * 2); // 44 bytes for header + data
+                const view = new DataView(buffer);
+                
+                // RIFF header
+                writeString(view, 0, 'RIFF');
+                view.setUint32(4, 36 + pcmData.length * 2, true);
+                writeString(view, 8, 'WAVE');
+                
+                // FMT chunk
+                writeString(view, 12, 'fmt ');
+                view.setUint32(16, 16, true); // Chunk size
+                view.setUint16(20, 1, true); // Linear PCM
+                view.setUint16(22, 1, true); // Mono
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * 2, true); // Byte rate
+                view.setUint16(32, 2, true); // Block align (16-bit mono = 2 bytes)
+                view.setUint16(34, 16, true); // Bits per sample
+                
+                // Data chunk
+                writeString(view, 36, 'data');
+                view.setUint32(40, pcmData.length * 2, true);
+                
+                // Write PCM data
+                let offset = 44;
+                for (let i = 0; i < pcmData.length; i++) {
+                    view.setInt16(offset, pcmData[i], true);
+                    offset += 2;
+                }
+                
+                return new Blob([buffer], { type: 'audio/wav' });
+            };
+
+            const payload = {
+                contents: [{ parts: [{ text: text }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: "Kore" }
+                        }
+                    }
+                },
+            };
+
+            const outputDiv = document.getElementById(outputElementId);
+            outputDiv.innerHTML = '<p class="text-secondary text-sm">Generating audio...</p>';
+            
+            try {
+                let response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const part = result.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+                
+                if (audioData && mimeType && mimeType.startsWith("audio/L16;rate=")) {
+                    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+                    const pcm16 = base64ToArrayBuffer(audioData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+
+                    // Replace the button with the audio player
+                    outputDiv.innerHTML = `<audio controls autoplay class="mt-2 w-full"><source src="${audioUrl}" type="audio/wav"></audio>`;
+                } else {
+                    outputDiv.innerHTML = '<p class="text-red-500 text-sm">Error: Audio generation failed.</p>';
+                }
+
+            } catch (error) {
+                console.error("Error during TTS API call:", error);
+                outputDiv.innerHTML = `<p class="text-red-500 text-sm">Failed to generate audio. Network error?</p>`;
+            }
+        }
+
+        window.callGemini = (prompt, isSummary, summaryIndex) => {
+            // Updated logic to ensure correct index is passed for summaries
+            callGemini(prompt, isSummary, summaryIndex);
+        };
+
+        window.readAloud = readAloud;
+
+        // Intersection Observer logic for animations
+        function setupObserver() {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        // Optional: stop observing after animation runs
+                        // observer.unobserve(entry.target); 
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.scroll-animate').forEach(element => {
+                observer.observe(element);
+            });
+        }
+        
+        // Ensure Firebase initialization runs when the window loads
+        window.onload = initializeFirebase;
+    </script>
+    
+    <!-- Using a dark, royal blue, and subtle gold theme for a premium feel -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1a26; /* Deep Navy Background */
+            color: #e5e7eb; /* Light Gray text for readability */
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .vibrant-blue {
+            background-color: #1e3a8a; /* A strong, deep blue */
+        }
+        .text-primary {
+            color: #d9b87f; /* Gold for main accents */
+        }
+        .text-secondary {
+            color: #4a90e2; /* Royal Blue for secondary accent */
+        }
+        .card {
+            background-color: #1a2c3a; /* Slightly lighter navy for contrast on dark background */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+        }
+        .btn-primary {
+            background-color: #d9b87f; /* Gold button */
+            color: #1e3a8a;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            background-color: #c7a76c;
+            transform: translateY(-1px);
+        }
+        
+        /* Scroll Animation Styles */
+        .scroll-animate {
+            opacity: 0;
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .scroll-animate.visible {
+            opacity: 1;
+            transform: translateY(0) translateX(0);
+        }
+        .slide-left {
+            transform: translateX(-50px);
+        }
+        .slide-right {
+            transform: translateX(50px);
+        }
+        .slide-up {
+            transform: translateY(50px);
+        }
+
+        /* Custom styling for the profile image */
+        .profile-img-container {
+            width: 15rem; /* w-64 */
+            height: 15rem; /* h-64 */
+        }
+        @media (max-width: 768px) {
+            .profile-img-container {
+                width: 12rem; /* w-48 on small screens */
+                height: 12rem; /* h-48 on small screens */
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto px-4 py-8 md:py-16">
+
+        <!-- Main Header Section -->
+        <header class="vibrant-blue text-white rounded-3xl shadow-xl overflow-hidden mb-16 relative scroll-animate slide-up">
+            <div class="absolute inset-0 z-0 opacity-10">
+                <!-- Using a visually appealing placeholder image of a Sri Lankan landmark for aesthetics -->
+                <img src="https://images.unsplash.com/photo-1628186107310-85f26cf9c071?q=80&w=2940&auto=format&fit=crop" onerror="this.onerror=null;this.src='https://placehold.co/1200x600/1e3a8a/d9b87f?text=Sri+Lankan+Scenery';" alt="Sri Lankan Landscape" class="w-full h-full object-cover">
+            </div>
+            <div class="relative z-10 flex flex-col md:flex-row items-center p-8 md:p-16 text-center md:text-left">
+                <div class="md:w-3/4 text-center md:text-left">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 leading-tight text-primary">
+                        Kithsiri Athulathmudali
+                    </h1>
+                    <p class="text-lg md:text-xl font-light text-indigo-200">
+                        Entrepreneur, Author, and Diplomat
+                    </p>
+                    <div class="mt-4 flex flex-wrap justify-center md:justify-start space-x-4">
+                        <span class="text-primary text-sm bg-indigo-800 px-3 py-1 rounded-full">B.Sc. Mechanical Engineering</span>
+                        <span class="text-primary text-sm bg-indigo-800 px-3 py-1 rounded-full">M.B.A.</span>
+                        <span class="text-primary text-sm bg-indigo-800 px-3 py-1 rounded-full">Former Ambassador</span>
+                    </div>
+                </div>
+                <div class="relative z-10 mt-8 md:mt-0 md:w-1/4 flex justify-center">
+                    <!-- Profile Image from user upload -->
+                    <div class="profile-img-container rounded-full overflow-hidden border-4 border-amber-400 shadow-lg">
+                        <img src="uploaded:image_6c0cb9.jpg-75c704ef-98a5-4df5-80f4-4458d666779e" onerror="this.onerror=null;this.src='https://placehold.co/256x256/1e293b/a5b4fc?text=Kithsiri+Athulathmudali'; this.style.backgroundColor='#1e293b';" alt="Kithsiri Athulathmudali Portrait" class="w-full h-full object-cover">
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="space-y-24">
+
+            <!-- About Section -->
+            <section id="about" class="bg-gray-900 rounded-2xl p-10 shadow-xl scroll-animate slide-left">
+                <h2 class="text-4xl font-extrabold text-primary mb-6 border-b-2 border-amber-400 pb-2">About Kithsiri Athulathmudali</h2>
+                <p class="text-gray-300 leading-relaxed text-base md:text-lg">
+                    Kithsiri (Keith) Athulathmudali is a distinguished leader known for his expertise in international business, strategy, and diplomatic service. His career, which includes extensive time in the United States and serving as the Ambassador-designate of Sri Lanka to the State of Qatar, is a testament to his dedication to service and creating long-term value. He is driven by a philosophy of **"thinking beyond the obvious"** and is a keen aviator.
+                </p>
+            </section>
+
+            <!-- Experience Section -->
+            <section id="experience">
+                <h2 class="text-4xl font-extrabold text-primary mb-10 text-center border-b-2 border-amber-400 pb-2 scroll-animate slide-up">
+                    Professional Trajectory
+                </h2>
+                <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
+                    
+                    <!-- Diplomatic Role Card -->
+                    <div class="card p-6 rounded-xl scroll-animate slide-left">
+                        <div class="flex items-center mb-4">
+                            <!-- Icon for Diplomacy/Government -->
+                            <svg class="w-10 h-10 text-primary mr-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white">Ambassador to Qatar (Designate)</h3>
+                                <p class="text-sm text-amber-300">Embassy of Sri Lanka, Doha | 2019</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm">
+                            Tasked with significantly strengthening bilateral ties, focusing efforts on enhancing **trade and foreign investment**. Advocated for the welfare of the large Sri Lankan expatriate community in Qatar, including initiatives to improve consular services and educational facilities.
+                        </p>
+                    </div>
+
+                    <!-- Honeywell Role Card -->
+                    <div class="card p-6 rounded-xl scroll-animate slide-right">
+                        <div class="flex items-center mb-4">
+                            <!-- Icon for Global Business -->
+                            <svg class="w-10 h-10 text-primary mr-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.215 3.322l-.21.14a4 4 0 00-2.483 3.63L6.5 12h-3a1 1 0 00-1 1v2a1 1 0 001 1h14a1 1 0 001-1v-2a1 1 0 00-1-1h-3.473l-.001-4.708a5 5 0 00-2.903-4.577l-.21-.138zM10 16a2 2 0 100-4 2 2 0 000 4z"></path></svg>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white">Managing Director, Asia Pacific</h3>
+                                <p class="text-sm text-amber-300">Honeywell Inc. | Based in Thailand & Singapore</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm">
+                            Spearheaded the expansion of a global business unit across 35 countries in the Asia-Pacific region. Instrumental in driving strategy and sales growth, leveraging his engineering and business acumen to achieve market dominance.
+                        </p>
+                    </div>
+                    
+                    <!-- Entrepreneurship Card -->
+                    <div class="card p-6 rounded-xl scroll-animate slide-left">
+                        <div class="flex items-center mb-4">
+                            <!-- Icon for Entrepreneurship -->
+                            <svg class="w-10 h-10 text-primary mr-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path></svg>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white">Founder & Investor</h3>
+                                <p class="text-sm text-amber-300">Multiple Ventures (e.g., EggSystems, Healthcare)</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm">
+                            Founded **EggSystems Pte Ltd**, focusing on building management systems, and received the **'Entrepreneur of the Year' (2001) in Singapore**. Also established and later sold several successful specialized **Alzheimer's care facilities** in Dallas, Texas.
+                        </p>
+                    </div>
+                    
+                    <!-- Management Role Card -->
+                    <div class="card p-6 rounded-xl scroll-animate slide-right">
+                        <div class="flex items-center mb-4">
+                            <!-- Icon for Management/Strategy -->
+                            <svg class="w-10 h-10 text-primary mr-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 3.5a1.5 1.5 0 013 0V4h-3V3.5zM15 15.5a1.5 1.5 0 013 0V16h-3v-3.5zM5 15.5a1.5 1.5 0 013 0V16H5v-3.5z"></path><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM12 9a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1zM7 9a1 1 0 011-1h1a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white">Director, Strategic Planning</h3>
+                                <p class="text-sm text-gray-400">Kaiser Foundation Hospitals / Johnson Controls</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm">
+                            Held senior management roles early in his career, including a **Director position at Kaiser Foundation Hospitals**. His work involved strategic planning and managing complex international operations across multiple countries.
+                        </p>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Education Section -->
+            <section id="education" class="mt-20 scroll-animate slide-up">
+                 <h2 class="text-4xl font-extrabold text-primary mb-10 text-center border-b-2 border-amber-400 pb-2">
+                    Academic Background
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="card p-6 rounded-xl scroll-animate slide-left">
+                        <h3 class="text-2xl font-semibold mb-3 text-white">Advanced Degrees</h3>
+                        <ul class="list-disc list-inside space-y-3 text-gray-300 text-base">
+                            <li>Master of Business Administration (MBA), California University, Long Beach, USA</li>
+                            <li>Bachelor of Science in Electrical Engineering, California University, Long Beach, USA</li>
+                        </ul>
+                    </div>
+                    <div class="card p-6 rounded-xl scroll-animate slide-right">
+                        <h3 class="text-2xl font-semibold mb-3 text-white">Engineering and Early Education</h3>
+                        <ul class="list-disc list-inside space-y-3 text-gray-300 text-base">
+                            <li>Bachelor of Science in Mechanical Engineering, Manchester University, UK</li>
+                            <li>Attended Nalanda College, Colombo</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Publications Section (Updated) -->
+            <section id="publications" class="mt-20">
+                <h2 class="text-4xl font-extrabold text-primary mb-10 text-center border-b-2 border-amber-400 pb-2 scroll-animate slide-up">
+                    Authored Works
+                </h2>
+                <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
+                    
+                    <!-- Book 1 Card: Networking Edge -->
+                    <div class="card p-6 rounded-xl scroll-animate slide-left">
+                        <h3 class="text-xl font-bold text-white mb-2">Networking Edge: Networking 101 for Sales Professionals</h3>
+                        <p class="text-sm text-amber-300 mb-4">Published: 2023 | <a href="https://www.amazon.com/Networking-Edge-101-sales-professionals/dp/B0FBKRM12S/" target="_blank" class="text-secondary hover:underline">View on Amazon</a></p>
+                        <p class="text-gray-300 text-base mb-4">
+                            A transformative guide providing 30 actionable chapters focused on mastering networking and relationship-building for sales professionals, covering everything from servant leadership to navigating cultural differences.
+                        </p>
+                        <div class="flex flex-col items-start justify-between">
+                            <button onclick="callGemini('Networking Edge: Networking 101 for Sales Professionals by Kithsiri Athulathmudali, covers servant leadership, follow-up strategies, and navigating cultural differences in networking.', true, 1)" class="btn-primary px-4 py-2 rounded-full text-sm">Summarize Book</button>
+                            <div id="summarize-output-1" class="hidden mt-4 w-full bg-indigo-800 p-4 rounded-lg border border-amber-400">
+                                <p class="text-sm font-semibold text-primary mb-2">Summary:</p>
+                                <p id="summarize-output-text-1" class="text-gray-200 text-sm whitespace-pre-wrap"></p>
+                                <div id="summarize-output-audio-1" class="mt-4 flex justify-end"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Book 2 Card: Keepers & Seekers -->
+                    <div class="card p-6 rounded-xl scroll-animate slide-right">
+                        <h3 class="text-xl font-bold text-white mb-2">Keepers & Seekers: How to find a compatible partner</h3>
+                        <p class="text-sm text-amber-300 mb-4">Published: 2024 | <a href="https://www.amazon.com/Keepers-Seekers-finding-compatible-partner/dp/B0FP9B75T4/" target="_blank" class="text-secondary hover:underline">View on Amazon</a></p>
+                        <p class="text-gray-300 text-base mb-4">
+                            A guide focused on relationship building, offering insights and strategies for finding and maintaining a deeply compatible and lasting partnership.
+                        </p>
+                         <div class="flex flex-col items-start justify-between">
+                            <button onclick="callGemini('Keepers & Seekers: How to find a compatible partner by Kithsiri Athulathmudali explores strategies for successful relationship building and finding a lasting partner.', true, 2)" class="btn-primary px-4 py-2 rounded-full text-sm">Summarize Book</button>
+                            <div id="summarize-output-2" class="hidden mt-4 w-full bg-indigo-800 p-4 rounded-lg border border-amber-400">
+                                <p class="text-sm font-semibold text-primary mb-2">Summary:</p>
+                                <p id="summarize-output-text-2" class="text-gray-200 text-sm whitespace-pre-wrap"></p>
+                                <div id="summarize-output-audio-2" class="mt-4 flex justify-end"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Book 3 Card: Profits with Purpose -->
+                    <div class="card p-6 rounded-xl scroll-animate slide-left">
+                        <h3 class="text-xl font-bold text-white mb-2">Profits with Purpose: Religion-Inspired Values in Business</h3>
+                        <p class="text-sm text-amber-300 mb-4">Published: 2024 | <a href="https://www.amazon.com/Profits-Purpose-Religion-Inspired-Values-Business/dp/B0FKN6CJ1W/" target="_blank" class="text-secondary hover:underline">View on Amazon</a></p>
+                        <p class="text-gray-300 text-base mb-4">
+                            Explores the intersection of religious principles and the corporate world, focusing on ethical leadership and achieving financial success through purposeful, value-driven methods.
+                        </p>
+                         <div class="flex flex-col items-start justify-between">
+                            <button onclick="callGemini('Profits with Purpose: Religion-Inspired Values in Business by Kithsiri Athulathmudali explores ethical business practices guided by religious principles for success.', true, 3)" class="btn-primary px-4 py-2 rounded-full text-sm">Summarize Book</button>
+                            <div id="summarize-output-3" class="hidden mt-4 w-full bg-indigo-800 p-4 rounded-lg border border-amber-400">
+                                <p class="text-sm font-semibold text-primary mb-2">Summary:</p>
+                                <p id="summarize-output-text-3" class="text-gray-200 text-sm whitespace-pre-wrap"></p>
+                                <div id="summarize-output-audio-3" class="mt-4 flex justify-end"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Book 4 Card: Simple Happiness -->
+                    <div class="card p-6 rounded-xl scroll-animate slide-right">
+                        <h3 class="text-xl font-bold text-white mb-2">Simple Happiness: Smiles Beyond Possessions</h3>
+                        <p class="text-sm text-amber-300 mb-4">Published: 2024 | <a href="https://www.amazon.com/Simple-Happiness-Smiles-Beyond-Possessions/dp/B0FR9FSWFC/" target="_blank" class="text-secondary hover:underline">View on Amazon</a></p>
+                        <p class="text-gray-300 text-base mb-4">
+                            A philosophical and practical guide on finding contentment and joy in life by prioritizing non-material values and fostering strong internal well-being.
+                        </p>
+                         <div class="flex flex-col items-start justify-between">
+                            <button onclick="callGemini('Simple Happiness: Smiles Beyond Possessions by Kithsiri Athulathmudali is a guide to finding contentment and joy through non-material values.', true, 4)" class="btn-primary px-4 py-2 rounded-full text-sm">Summarize Book</button>
+                            <div id="summarize-output-4" class="hidden mt-4 w-full bg-indigo-800 p-4 rounded-lg border border-amber-400">
+                                <p class="text-sm font-semibold text-primary mb-2">Summary:</p>
+                                <p id="summarize-output-text-4" class="text-gray-200 text-sm whitespace-pre-wrap"></p>
+                                <div id="summarize-output-audio-4" class="mt-4 flex justify-end"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            
+            <!-- Podcasts and Media Section (New additions) -->
+            <section id="podcasts" class="mt-20">
+                <h2 class="text-4xl font-extrabold text-primary mb-10 text-center border-b-2 border-amber-400 pb-2 scroll-animate slide-up">
+                    Podcasts & Digital Media
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    
+                    <!-- Employee Retention Podcast Card -->
+                    <div class="card p-6 rounded-xl scroll-animate slide-left">
+                        <div class="flex items-center mb-4">
+                            <svg class="w-10 h-10 text-primary mr-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-5-8a1 1 0 011-1h6a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white">Employee Retention Across Enterprises (Podcast)</h3>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm mb-4">
+                            **Focus:** Dedicated to exploring how organizations across the U.S. are keeping their best people in today’s rapidly changing workplace. This series looks inward, at how companies can strengthen the bonds with their employees through real-world strategies and innovative practices.
+                        </p>
+                    </div>
+
+                    <!-- The Networking Edge Podcast Card -->
+                    <div class="card p-6 rounded-xl scroll-animate slide-right">
+                        <div class="flex items-center mb-4">
+                            <svg class="w-10 h-10 text-primary mr-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-5-8a1 1 0 011-1h6a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white">The Networking Edge (Podcast & YouTube)</h3>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm mb-4">
+                            **Focus:** This earlier podcast series builds on the principles of the book, focusing on the power of building professional relationships, effective communication, and continuous learning to achieve personal and professional growth.
+                        </p>
+                         <a href="https://www.youtube.com/@NetworkingEdge-Podcast" target="_blank" class="text-secondary hover:text-amber-400 text-sm font-medium inline-block">View on YouTube &rarr;</a>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Featured Media Section (Original articles, moved down) -->
+            <section id="articles" class="mt-20">
+                <h2 class="text-4xl font-extrabold text-primary mb-10 text-center border-b-2 border-amber-400 pb-2 scroll-animate slide-up">
+                    Interviews & Press
+                </h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="card p-5 rounded-xl scroll-animate slide-left">
+                        <h3 class="text-xl font-semibold text-white mb-2">Strong Qatar-Sri Lanka relations further expanding: Envoy</h3>
+                        <p class="text-sm text-amber-300 mb-2">The Peninsula Qatar | October 6, 2019</p>
+                        <p class="text-gray-300 text-sm">Discussed his priorities as Ambassador, including building on strong bilateral ties and focusing on non-traditional areas like food production and tourism.</p>
+                        <a href="https://thepeninsulaqatar.com/article/06/10/2019/Strong-Qatar-Sri-Lanka-relations-further-expanding-Envoy" target="_blank" class="text-secondary hover:text-amber-400 text-sm font-medium mt-2 inline-block">Read Article &rarr;</a>
+                    </div>
+                    <div class="card p-5 rounded-xl scroll-animate slide-right">
+                        <h3 class="text-xl font-semibold text-white mb-2">Lanka's new Qatar envoy looks to the future when forging ties</h3>
+                        <p class="text-sm text-amber-300 mb-2">The Sunday Times Sri Lanka | July 28, 2019</p>
+                        <p class="text-gray-300 text-sm">An in-depth interview covering his professional philosophy, his approach to diplomacy, and his belief in "thinking beyond the obvious."</p>
+                        <a href="https://www.sundaytimes.lk/190728/news/lankas-new-qatar-envoy-looks-to-the-future-when-forging-ties-360240.html" target="_blank" class="text-secondary hover:text-amber-400 text-sm font-medium mt-2 inline-block">Read Article &rarr;</a>
+                    </div>
+                    <div class="card p-5 rounded-xl scroll-animate slide-left">
+                        <h3 class="text-xl font-semibold text-white mb-2">GWC Welcomes Sri Lankan Ambassador at Logistics Village Qatar</h3>
+                        <p class="text-sm text-amber-300 mb-2">GWC Logistics | August 20, 2019</p>
+                        <p class="text-gray-300 text-sm">Report on his visit to GWC's integrated logistics hub, emphasizing employee welfare and the potential for collaboration in logistics.</p>
+                        <a href="https://www.gwclogistics.com/news/gwc-welcomes-sri-lankan-ambassador-at-logistics-village-qatar/" target="_blank" class="text-secondary hover:text-amber-400 text-sm font-medium mt-2 inline-block">Read Article &rarr;</a>
+                    </div>
+                     <div class="card p-5 rounded-xl scroll-animate slide-right">
+                        <h3 class="text-xl font-semibold text-white mb-2">Minister of State for Foreign Affairs Meets Ambassadors</h3>
+                        <p class="text-sm text-amber-300 mb-2">Ministry of Foreign Affairs, Qatar | Jan 22, 2020</p>
+                        <p class="text-gray-300 text-sm">Coverage of a meeting to thank Ambassador Athulathmudali for his efforts in promoting bilateral relations.</p>
+                        <a href="https://mofa.gov.qa/en/qatar/latest-articles/latest-news/details/2020/01/22/minister-of-state-for-foreign-affairs-meets-ambassadors-of-sri-lanka-bulgaria-and-lebanon" target="_blank" class="text-secondary hover:text-amber-400 text-sm font-medium mt-2 inline-block">Read Article &rarr;</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ask Me Section (Interactive Chatbot) -->
+            <section id="ask" class="mt-20 bg-gray-900 rounded-2xl p-10 shadow-xl scroll-animate slide-up">
+                <h2 class="text-4xl font-extrabold text-primary mb-6 border-b-2 border-amber-400 pb-2 text-center">
+                    Ask Kithsiri Athulathmudali
+                </h2>
+                <div class="max-w-3xl mx-auto">
+                    <p class="text-gray-300 text-center mb-6">Have a question about his career, philosophy, or publications? Ask the AI Assistant!</p>
+                    <input type="text" id="user-question" placeholder="e.g., What is his philosophy on leadership?" class="w-full p-3 rounded-lg bg-gray-800 border border-indigo-700 text-white placeholder-gray-500 focus:ring-amber-400 focus:border-amber-400 mb-4">
+                    <button onclick="callGemini(document.getElementById('user-question').value, false, null)" class="btn-primary w-full p-3 rounded-lg">
+                        Get Answer
+                    </button>
+
+                    <div id="loading-indicator" class="hidden text-center mt-4">
+                        <p class="text-secondary">Generating response...</p>
+                    </div>
+
+                    <div id="ask-output" class="hidden mt-8 bg-indigo-900 p-6 rounded-xl border border-amber-400">
+                        <p class="text-lg font-semibold text-primary mb-3">AI Response:</p>
+                        <p id="ask-output-text" class="text-gray-200 whitespace-pre-wrap"></p>
+                        <div id="ask-output-audio" class="mt-4 flex justify-end"></div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+</body>
+</html>
