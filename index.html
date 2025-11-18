@@ -39,9 +39,6 @@
 
                 console.log("Firebase initialized and signed in.");
 
-                // Initialize the Intersection Observer for animations after successful initialization
-                setupObserver();
-
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
             }
@@ -244,8 +241,11 @@
             });
         }
 
-        // Ensure Firebase initialization runs when the window loads
-        window.onload = initializeFirebase;
+        // Ensure Firebase initialization and animations run when the window loads
+        window.onload = () => {
+            setupObserver(); // Always setup animations
+            initializeFirebase(); // Try to initialize Firebase
+        };
     </script>
 
     <!-- Custom Styles -->
