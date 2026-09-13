@@ -85,7 +85,7 @@
 
                 outputTextElement.innerText = text;
                 outputTextElement.classList.remove('hidden');
-                outputAudioElement.innerHTML = `<button onclick="readAloud('${text.replace(/'/g, "\\'")}', '${audioOutputId}')" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2"><i class="fas fa-volume-up"></i> Listen</button>`;
+                outputAudioElement.innerHTML = `<button onclick="readAloud('${text.replace(/'/g, "\\'")}', '${audioOutputId}')" class="text-blue-400 hover:text-blue-700 font-medium text-sm flex items-center gap-2"><i class="fas fa-volume-up"></i> Listen</button>`;
 
             } catch (error) {
                 console.error("Error during Gemini API call:", error);
@@ -159,7 +159,7 @@
             };
 
             const outputDiv = document.getElementById(outputElementId);
-            outputDiv.innerHTML = '<p class="text-gray-500 text-sm">Generating audio...</p>';
+            outputDiv.innerHTML = '<p class="text-gray-400 text-sm">Generating audio...</p>';
 
             try {
                 let response = await fetch(apiUrl, {
@@ -225,18 +225,20 @@
 
     <style>
         :root {
-            --primary-blue: #2563eb;
-            --primary-blue-dark: #1e40af;
+            --primary-blue: #3b82f6;
+            --primary-blue-dark: #2563eb;
             --accent-teal: #14b8a6;
-            --text-dark: #0f172a;
-            --text-gray: #475569;
-            --bg-light: #f8fafc;
+            --text-light: #f1f5f9;
+            --text-gray: #cbd5e1;
+            --bg-navy: #0f172a;
+            --bg-navy-light: #1e293b;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            color: var(--text-dark);
+            background: linear-gradient(135deg, #0a0e1a 0%, #0f172a 50%, #1e293b 100%);
+            color: var(--text-light);
+            min-height: 100vh;
         }
 
         h1, h2, h3 {
@@ -245,20 +247,21 @@
 
         .nav-blur {
             backdrop-filter: blur(12px);
-            background: rgba(255, 255, 255, 0.9);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            background: rgba(15, 23, 42, 0.8);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
         }
 
         .glass-card {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(30, 41, 59, 0.6);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
         .glass-card:hover {
-            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 12px 48px rgba(59, 130, 246, 0.2);
             transform: translateY(-4px);
+            border-color: rgba(59, 130, 246, 0.4);
         }
 
         .gradient-text {
@@ -275,7 +278,7 @@
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
         }
 
         .scroll-animate {
@@ -313,7 +316,7 @@
 
         @keyframes pulse-border {
             0%, 100% {
-                opacity: 0.8;
+                opacity: 0.6;
                 transform: scale(1);
             }
             50% {
@@ -329,23 +332,25 @@
             align-items: center;
             justify-content: center;
             border-radius: 16px;
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
             transition: all 0.3s ease;
         }
 
         .icon-wrapper:hover {
             transform: rotate(5deg) scale(1.1);
+            background: rgba(59, 130, 246, 0.2);
         }
 
         .tag {
             display: inline-block;
             padding: 0.5rem 1rem;
-            background: rgba(37, 99, 235, 0.1);
+            background: rgba(59, 130, 246, 0.15);
             border-radius: 9999px;
             font-size: 0.875rem;
             font-weight: 500;
-            color: var(--primary-blue);
-            border: 1px solid rgba(37, 99, 235, 0.2);
+            color: var(--accent-teal);
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
 
         @media (max-width: 768px) {
@@ -363,11 +368,11 @@
             <div class="flex items-center justify-between">
                 <div class="text-xl font-bold gradient-text">Kithsiri Athulathmudali</div>
                 <div class="hidden md:flex items-center gap-8">
-                    <a href="#about" class="text-gray-700 hover:text-blue-600 transition-colors font-medium">About</a>
-                    <a href="#experience" class="text-gray-700 hover:text-blue-600 transition-colors font-medium">Experience</a>
-                    <a href="#publications" class="text-gray-700 hover:text-blue-600 transition-colors font-medium">Books</a>
-                    <a href="#media" class="text-gray-700 hover:text-blue-600 transition-colors font-medium">Media</a>
-                    <a href="#contact" class="text-gray-700 hover:text-blue-600 transition-colors font-medium">Contact</a>
+                    <a href="#about" class="text-gray-300 hover:text-blue-400 transition-colors font-medium">About</a>
+                    <a href="#experience" class="text-gray-300 hover:text-blue-400 transition-colors font-medium">Experience</a>
+                    <a href="#publications" class="text-gray-300 hover:text-blue-400 transition-colors font-medium">Books</a>
+                    <a href="#media" class="text-gray-300 hover:text-blue-400 transition-colors font-medium">Media</a>
+                    <a href="#contact" class="text-gray-300 hover:text-blue-400 transition-colors font-medium">Contact</a>
                 </div>
             </div>
         </div>
@@ -383,7 +388,7 @@
                     </div>
                     <div class="flex-1 text-center md:text-left">
                         <h1 class="text-5xl md:text-6xl font-bold mb-4 gradient-text">Kithsiri Athulathmudali</h1>
-                        <p class="text-2xl text-gray-600 mb-6">Entrepreneur, Author & Former Ambassador</p>
+                        <p class="text-2xl text-gray-300 mb-6">Entrepreneur, Author & Former Ambassador</p>
                         <div class="flex flex-wrap gap-3 justify-center md:justify-start">
                             <span class="tag">B.Sc. Mechanical Engineering</span>
                             <span class="tag">M.B.A.</span>
@@ -400,35 +405,35 @@
         <div class="container mx-auto max-w-5xl">
             <h2 class="text-4xl md:text-5xl font-bold text-center mb-12 gradient-text">About</h2>
             <div class="glass-card rounded-2xl p-10 transition-all duration-300">
-                <p class="text-lg text-gray-700 leading-relaxed mb-6">
+                <p class="text-lg text-gray-200 leading-relaxed mb-6">
                     Kithsiri Athulathmudali, also known as Keith, is a seasoned professional with a diverse background spanning entrepreneurship, authorship, and international diplomacy. With a keen interest in aviation, he holds a pilot's license and has taken on significant leadership roles across various industries.
                 </p>
-                <p class="text-lg text-gray-700 leading-relaxed mb-8">
+                <p class="text-lg text-gray-200 leading-relaxed mb-8">
                     His career, which includes extensive time in the United States and serving as the Ambassador-designate of Sri Lanka to the State of Qatar, is a testament to his dedication to service and creating long-term value.
                 </p>
 
-                <div class="border-t border-gray-200 pt-8">
-                    <h3 class="text-2xl font-semibold mb-6 text-blue-900">Education</h3>
+                <div class="border-t border-gray-700 pt-8">
+                    <h3 class="text-2xl font-semibold mb-6 text-blue-300">Education</h3>
                     <div class="grid md:grid-cols-2 gap-4">
                         <div class="flex items-start gap-3">
                             <i class="fas fa-graduation-cap text-blue-600 text-xl mt-1"></i>
                             <div>
-                                <p class="font-semibold text-gray-800">B.Sc. Mechanical Engineering</p>
-                                <p class="text-gray-600">Manchester University, UK</p>
+                                <p class="font-semibold text-gray-100">B.Sc. Mechanical Engineering</p>
+                                <p class="text-gray-300">Manchester University, UK</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3">
                             <i class="fas fa-graduation-cap text-blue-600 text-xl mt-1"></i>
                             <div>
-                                <p class="font-semibold text-gray-800">B.Sc. & M.B.A.</p>
-                                <p class="text-gray-600">California University, Long Beach</p>
+                                <p class="font-semibold text-gray-100">B.Sc. & M.B.A.</p>
+                                <p class="text-gray-300">California University, Long Beach</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3">
                             <i class="fas fa-school text-blue-600 text-xl mt-1"></i>
                             <div>
-                                <p class="font-semibold text-gray-800">Alumnus</p>
-                                <p class="text-gray-600">Nalanda College, Colombo</p>
+                                <p class="font-semibold text-gray-100">Alumnus</p>
+                                <p class="text-gray-300">Nalanda College, Colombo</p>
                             </div>
                         </div>
                     </div>
@@ -450,9 +455,9 @@
                             <i class="fas fa-globe-americas text-3xl text-blue-600"></i>
                         </div>
                         <div class="flex-1">
-                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Ambassador of Sri Lanka to Qatar</h3>
-                            <p class="text-blue-600 font-medium mb-4">2019 - 2020</p>
-                            <p class="text-gray-700 leading-relaxed">
+                            <h3 class="text-2xl font-bold text-white mb-2">Ambassador of Sri Lanka to Qatar</h3>
+                            <p class="text-blue-400 font-medium mb-4">2019 - 2020</p>
+                            <p class="text-gray-200 leading-relaxed">
                                 Key diplomatic role focused on strengthening bilateral relations, promoting trade and investment, and ensuring the welfare and rights of the large Sri Lankan expatriate community in Qatar.
                             </p>
                         </div>
@@ -466,9 +471,9 @@
                             <i class="fas fa-building text-3xl text-blue-600"></i>
                         </div>
                         <div class="flex-1">
-                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Managing Director, Asia Pacific</h3>
-                            <p class="text-blue-600 font-medium mb-4">Honeywell International | Singapore</p>
-                            <p class="text-gray-700 leading-relaxed">
+                            <h3 class="text-2xl font-bold text-white mb-2">Managing Director, Asia Pacific</h3>
+                            <p class="text-blue-400 font-medium mb-4">Honeywell International | Singapore</p>
+                            <p class="text-gray-200 leading-relaxed">
                                 Oversaw massive regional operations, notably establishing and managing a global healthcare business unit. Instrumental in strategic growth across 35 countries, showcasing expertise in international business development and leadership.
                             </p>
                         </div>
@@ -482,9 +487,9 @@
                             <i class="fas fa-rocket text-3xl text-blue-600"></i>
                         </div>
                         <div class="flex-1">
-                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Founder & CEO</h3>
-                            <p class="text-blue-600 font-medium mb-4">Various Ventures | Singapore & Dallas, TX</p>
-                            <p class="text-gray-700 leading-relaxed">
+                            <h3 class="text-2xl font-bold text-white mb-2">Founder & CEO</h3>
+                            <p class="text-blue-400 font-medium mb-4">Various Ventures | Singapore & Dallas, TX</p>
+                            <p class="text-gray-200 leading-relaxed">
                                 Recognized as 'Entrepreneur of the Year' (2001, Singapore). Founded a successful technology systems integration firm and established multiple highly-rated Alzheimer's compassionate care facilities in Dallas, Texas.
                             </p>
                         </div>
@@ -506,16 +511,16 @@
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                             <i class="fas fa-book text-blue-600 text-xl"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-3">Simple Happiness</h3>
-                        <p class="text-gray-600 text-sm mb-4">Smiles Beyond Possessions. A guide to finding true contentment beyond material wealth.</p>
+                        <h3 class="text-xl font-bold text-white mb-3">Simple Happiness</h3>
+                        <p class="text-gray-300 text-sm mb-4">Smiles Beyond Possessions. A guide to finding true contentment beyond material wealth.</p>
                     </div>
                     <div>
                         <div id="summarize-output-1" class="hidden mb-3 p-3 bg-blue-50 rounded-lg">
-                            <p id="summarize-output-text-1" class="text-sm text-gray-700 italic"></p>
+                            <p id="summarize-output-text-1" class="text-sm text-gray-200 italic"></p>
                             <div id="summarize-output-audio-1" class="mt-2"></div>
                         </div>
                         <div class="space-y-2">
-                            <a href="https://www.amazon.com/Simple-Happiness-Smiles-Beyond-Possessions/dp/B0FR9FSWFC/" target="_blank" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                            <a href="https://www.amazon.com/Simple-Happiness-Smiles-Beyond-Possessions/dp/B0FR9FSWFC/" target="_blank" class="text-blue-400 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
                                 <i class="fab fa-amazon"></i> View on Amazon
                             </a>
                             <button onclick="callGemini('Summarize the book Simple Happiness: Smiles Beyond Possessions by Kithsiri Athulathmudali', true, 1)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
@@ -531,16 +536,16 @@
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                             <i class="fas fa-book text-blue-600 text-xl"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-3">Profits with Purpose</h3>
-                        <p class="text-gray-600 text-sm mb-4">Religion-Inspired Values in Business. Integrating faith and ethical values into business leadership.</p>
+                        <h3 class="text-xl font-bold text-white mb-3">Profits with Purpose</h3>
+                        <p class="text-gray-300 text-sm mb-4">Religion-Inspired Values in Business. Integrating faith and ethical values into business leadership.</p>
                     </div>
                     <div>
                         <div id="summarize-output-2" class="hidden mb-3 p-3 bg-blue-50 rounded-lg">
-                            <p id="summarize-output-text-2" class="text-sm text-gray-700 italic"></p>
+                            <p id="summarize-output-text-2" class="text-sm text-gray-200 italic"></p>
                             <div id="summarize-output-audio-2" class="mt-2"></div>
                         </div>
                         <div class="space-y-2">
-                            <a href="https://www.amazon.com/Profits-Purpose-Religion-Inspired-Values-Business/dp/B0FKN6CJ1W/" target="_blank" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                            <a href="https://www.amazon.com/Profits-Purpose-Religion-Inspired-Values-Business/dp/B0FKN6CJ1W/" target="_blank" class="text-blue-400 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
                                 <i class="fab fa-amazon"></i> View on Amazon
                             </a>
                             <button onclick="callGemini('Summarize the book Profits with Purpose: Religion-Inspired Values in Business by Kithsiri Athulathmudali', true, 2)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
@@ -556,16 +561,16 @@
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                             <i class="fas fa-book text-blue-600 text-xl"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-3">Keepers & Seekers</h3>
-                        <p class="text-gray-600 text-sm mb-4">How to find a compatible partner. A practical guide to navigating modern relationships.</p>
+                        <h3 class="text-xl font-bold text-white mb-3">Keepers & Seekers</h3>
+                        <p class="text-gray-300 text-sm mb-4">How to find a compatible partner. A practical guide to navigating modern relationships.</p>
                     </div>
                     <div>
                         <div id="summarize-output-3" class="hidden mb-3 p-3 bg-blue-50 rounded-lg">
-                            <p id="summarize-output-text-3" class="text-sm text-gray-700 italic"></p>
+                            <p id="summarize-output-text-3" class="text-sm text-gray-200 italic"></p>
                             <div id="summarize-output-audio-3" class="mt-2"></div>
                         </div>
                         <div class="space-y-2">
-                            <a href="https://www.amazon.com/Keepers-Seekers-finding-compatible-partner/dp/B0FP9B75T4/" target="_blank" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                            <a href="https://www.amazon.com/Keepers-Seekers-finding-compatible-partner/dp/B0FP9B75T4/" target="_blank" class="text-blue-400 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
                                 <i class="fab fa-amazon"></i> View on Amazon
                             </a>
                             <button onclick="callGemini('Summarize the book Keepers & Seekers: How to find a compatible partner by Kithsiri Athulathmudali', true, 3)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
@@ -581,16 +586,16 @@
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                             <i class="fas fa-book text-blue-600 text-xl"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-3">Networking Edge</h3>
-                        <p class="text-gray-600 text-sm mb-4">101 Lessons for sales professionals. Essential tips for building professional relationships.</p>
+                        <h3 class="text-xl font-bold text-white mb-3">Networking Edge</h3>
+                        <p class="text-gray-300 text-sm mb-4">101 Lessons for sales professionals. Essential tips for building professional relationships.</p>
                     </div>
                     <div>
                         <div id="summarize-output-4" class="hidden mb-3 p-3 bg-blue-50 rounded-lg">
-                            <p id="summarize-output-text-4" class="text-sm text-gray-700 italic"></p>
+                            <p id="summarize-output-text-4" class="text-sm text-gray-200 italic"></p>
                             <div id="summarize-output-audio-4" class="mt-2"></div>
                         </div>
                         <div class="space-y-2">
-                            <a href="https://www.amazon.com/Networking-Edge-101-sales-professionals/dp/B0FBKRM12S/" target="_blank" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                            <a href="https://www.amazon.com/Networking-Edge-101-sales-professionals/dp/B0FBKRM12S/" target="_blank" class="text-blue-400 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
                                 <i class="fab fa-amazon"></i> View on Amazon
                             </a>
                             <button onclick="callGemini('Summarize the book Networking Edge: 101 lessons for sales professionals by Kithsiri Athulathmudali', true, 4)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
@@ -614,8 +619,8 @@
                     <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-teal-500 rounded-2xl flex items-center justify-center mb-6">
                         <i class="fas fa-microphone-alt text-white text-2xl"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Employee Retention Across Enterprises</h3>
-                    <p class="text-gray-700 leading-relaxed">
+                    <h3 class="text-2xl font-bold text-white mb-4">Employee Retention Across Enterprises</h3>
+                    <p class="text-gray-200 leading-relaxed">
                         A podcast series exploring how organizations across the U.S. are keeping their best people in today's rapidly changing workplace, focusing on strengthening employee bonds through innovative strategies.
                     </p>
                 </div>
@@ -625,8 +630,8 @@
                     <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6">
                         <i class="fab fa-youtube text-white text-2xl"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-4">The Networking Edge</h3>
-                    <p class="text-gray-700 leading-relaxed mb-6">
+                    <h3 class="text-2xl font-bold text-white mb-4">The Networking Edge</h3>
+                    <p class="text-gray-200 leading-relaxed mb-6">
                         Explore the art and science of building meaningful professional relationships. Features insights, tips, and interviews designed to help you succeed in your career.
                     </p>
                     <a href="https://www.youtube.com/@NetworkingEdge-Podcast" target="_blank" class="btn-primary text-white px-6 py-3 rounded-lg inline-flex items-center gap-2 font-medium">
@@ -646,11 +651,11 @@
                         <i class="fas fa-robot text-white text-2xl"></i>
                     </div>
                     <h2 class="text-3xl md:text-4xl font-bold gradient-text mb-3">AI Assistant</h2>
-                    <p class="text-gray-600">Ask about Kithsiri's work, experience, or philosophy</p>
+                    <p class="text-gray-300">Ask about Kithsiri's work, experience, or philosophy</p>
                 </div>
 
                 <div class="space-y-4">
-                    <textarea id="user-question-input" class="w-full p-4 rounded-xl bg-white border-2 border-gray-200 focus:border-blue-500 focus:outline-none text-gray-800 transition-colors" rows="4" placeholder="e.g., 'What was Kithsiri's role at Honeywell?' or 'What is his philosophy on business?'"></textarea>
+                    <textarea id="user-question-input" class="w-full p-4 rounded-xl bg-white border-2 border-gray-700 focus:border-blue-500 focus:outline-none text-gray-100 transition-colors" rows="4" placeholder="e.g., 'What was Kithsiri's role at Honeywell?' or 'What is his philosophy on business?'"></textarea>
 
                     <button onclick="callGemini(document.getElementById('user-question-input').value, false, null)" class="btn-primary w-full text-white px-6 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-3">
                         <i class="fas fa-paper-plane"></i> Ask Question
@@ -667,10 +672,10 @@
                 </div>
 
                 <div id="ask-output" class="hidden mt-8 p-6 bg-gradient-to-br from-blue-50 to-teal-50 rounded-xl border border-blue-100">
-                    <p class="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                    <p class="text-sm font-semibold text-blue-300 mb-3 flex items-center gap-2">
                         <i class="fas fa-comment-dots"></i> Response:
                     </p>
-                    <p id="ask-output-text" class="text-gray-800 leading-relaxed whitespace-pre-wrap"></p>
+                    <p id="ask-output-text" class="text-gray-100 leading-relaxed whitespace-pre-wrap"></p>
                     <div id="ask-output-audio" class="mt-4 flex justify-end"></div>
                 </div>
             </div>
