@@ -7,19 +7,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- Font Awesome CDN for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Load required Firebase libraries for the Gemini API call -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global variables provided by the execution environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIzaSy...", projectId: "test-project-id" }; // Fallback config
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIzaSy...", projectId: "test-project-id" };
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let db, auth;
@@ -30,7 +27,6 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                // Sign in using custom token or anonymously
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                 } else {
@@ -38,13 +34,11 @@
                 }
 
                 console.log("Firebase initialized and signed in.");
-
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
             }
         }
 
-        // Global function for the LLM call
         async function callGemini(prompt, isSummary = false, summaryIndex = null) {
             const outputId = isSummary ? `summarize-output-text-${summaryIndex}` : 'ask-output-text';
             const audioOutputId = isSummary ? `summarize-output-audio-${summaryIndex}` : 'ask-output-audio';
@@ -55,12 +49,11 @@
             const loadingIndicator = document.getElementById('loading-indicator');
             const containerElement = document.getElementById(containerId);
 
-            // Hide previous audio and show loading state
-            outputTextElement.innerText = "Generating response, please wait...";
+            outputTextElement.innerText = "Generating response...";
             outputAudioElement.innerHTML = "";
             containerElement.classList.remove('hidden');
             if (!isSummary) {
-                 loadingIndicator.classList.remove('hidden');
+                loadingIndicator.classList.remove('hidden');
             }
 
             const systemPrompt = isSummary
@@ -91,8 +84,8 @@
                 const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
 
                 outputTextElement.innerText = text;
-                outputTextElement.classList.remove('hidden'); // Ensure text is visible
-                outputAudioElement.innerHTML = `<button onclick="readAloud('${text.replace(/'/g, "\\'")}', '${audioOutputId}')" class="btn-primary mt-4 px-4 py-2 rounded-full text-sm">Read Aloud</button>`;
+                outputTextElement.classList.remove('hidden');
+                outputAudioElement.innerHTML = `<button onclick="readAloud('${text.replace(/'/g, "\\'")}', '${audioOutputId}')" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2"><i class="fas fa-volume-up"></i> Listen</button>`;
 
             } catch (error) {
                 console.error("Error during Gemini API call:", error);
@@ -104,12 +97,10 @@
             }
         }
 
-        // Global function for TTS (Text-to-Speech)
         async function readAloud(text, outputElementId) {
             const apiKey = "";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
 
-            // Helper function to convert base64 to Int16Array
             const base64ToArrayBuffer = (base64) => {
                 const binaryString = atob(base64);
                 const len = binaryString.length;
@@ -117,42 +108,35 @@
                 for (let i = 0; i < len; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
-                // API returns signed PCM16 audio data.
                 return new Int16Array(bytes.buffer);
             };
 
-            // Helper function to write WAV header string
             const writeString = (view, offset, string) => {
                 for (let i = 0; i < string.length; i++) {
                     view.setUint8(offset + i, string.charCodeAt(i));
                 }
             };
 
-            // Helper function to convert PCM to WAV format
             const pcmToWav = (pcmData, sampleRate) => {
-                const buffer = new ArrayBuffer(44 + pcmData.length * 2); // 44 bytes for header + data
+                const buffer = new ArrayBuffer(44 + pcmData.length * 2);
                 const view = new DataView(buffer);
 
-                // RIFF header
                 writeString(view, 0, 'RIFF');
                 view.setUint32(4, 36 + pcmData.length * 2, true);
                 writeString(view, 8, 'WAVE');
 
-                // FMT chunk
                 writeString(view, 12, 'fmt ');
-                view.setUint32(16, 16, true); // Chunk size
-                view.setUint16(20, 1, true); // Linear PCM
-                view.setUint16(22, 1, true); // Mono
+                view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true);
+                view.setUint16(22, 1, true);
                 view.setUint32(24, sampleRate, true);
-                view.setUint32(28, sampleRate * 2, true); // Byte rate
-                view.setUint16(32, 2, true); // Block align (16-bit mono = 2 bytes)
-                view.setUint16(34, 16, true); // Bits per sample
+                view.setUint32(28, sampleRate * 2, true);
+                view.setUint16(32, 2, true);
+                view.setUint16(34, 16, true);
 
-                // Data chunk
                 writeString(view, 36, 'data');
                 view.setUint32(40, pcmData.length * 2, true);
 
-                // Write PCM data
                 let offset = 44;
                 for (let i = 0; i < pcmData.length; i++) {
                     view.setInt16(offset, pcmData[i], true);
@@ -175,7 +159,7 @@
             };
 
             const outputDiv = document.getElementById(outputElementId);
-            outputDiv.innerHTML = '<p class="text-secondary text-sm">Generating audio...</p>';
+            outputDiv.innerHTML = '<p class="text-gray-500 text-sm">Generating audio...</p>';
 
             try {
                 let response = await fetch(apiUrl, {
@@ -199,26 +183,20 @@
                     const wavBlob = pcmToWav(pcm16, sampleRate);
                     const audioUrl = URL.createObjectURL(wavBlob);
 
-                    // Replace the button with the audio player
-                    outputDiv.innerHTML = `<audio controls autoplay class="mt-2 w-full"><source src="${audioUrl}" type="audio/wav"></audio>`;
+                    outputDiv.innerHTML = `<audio controls autoplay class="mt-2 w-full max-w-sm"><source src="${audioUrl}" type="audio/wav"></audio>`;
                 } else {
                     outputDiv.innerHTML = '<p class="text-red-500 text-sm">Error: Audio generation failed.</p>';
                 }
 
             } catch (error) {
                 console.error("Error during TTS API call:", error);
-                outputDiv.innerHTML = `<p class="text-red-500 text-sm">Failed to generate audio. Network error?</p>`;
+                outputDiv.innerHTML = `<p class="text-red-500 text-sm">Failed to generate audio.</p>`;
             }
         }
 
-        window.callGemini = (prompt, isSummary, summaryIndex) => {
-            // Updated logic to ensure correct index is passed for summaries
-            callGemini(prompt, isSummary, summaryIndex);
-        };
-
+        window.callGemini = callGemini;
         window.readAloud = readAloud;
 
-        // Intersection Observer logic for animations
         function setupObserver() {
             const observerOptions = {
                 root: null,
@@ -226,12 +204,10 @@
                 threshold: 0.1
             };
 
-            const observer = new IntersectionObserver((entries, observer) => {
+            const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         entry.target.classList.add('visible');
-                        // Optional: stop observing after animation runs
-                        // observer.unobserve(entry.target);
                     }
                 });
             }, observerOptions);
@@ -241,327 +217,471 @@
             });
         }
 
-        // Ensure Firebase initialization and animations run when the window loads
         window.onload = () => {
-            setupObserver(); // Always setup animations
-            initializeFirebase(); // Try to initialize Firebase
+            setupObserver();
+            initializeFirebase();
         };
     </script>
 
-    <!-- Custom Styles -->
     <style>
-        /* Color Palette */
         :root {
-            --color-black: #000000;
-            --color-dark-navy: #0F172A; /* Slate 900 for card background */
-            --color-royal-blue: #005A9C; /* Deeper Royal Blue */
-            --color-gold: #FFD700; /* Brighter Gold */
-            --color-light-gray: #e5e7eb;
+            --primary-blue: #2563eb;
+            --primary-blue-dark: #1e40af;
+            --accent-teal: #14b8a6;
+            --text-dark: #0f172a;
+            --text-gray: #475569;
+            --bg-light: #f8fafc;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--color-black);
-            color: var(--color-light-gray);
-        }
-        .header-bg {
-            background-color: var(--color-royal-blue);
-            background-image: linear-gradient(135deg, var(--color-dark-navy) 0%, var(--color-royal-blue) 100%);
-        }
-        .text-primary {
-            color: var(--color-gold);
-        }
-        .text-secondary {
-            color: var(--color-royal-blue);
-        }
-        .card {
-            background-color: var(--color-dark-navy);
-            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.15); /* Gold shadow effect */
-            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(255, 215, 0, 0.3);
-        }
-        .btn-primary {
-            background-color: var(--color-gold);
-            color: var(--color-dark-navy);
-            font-weight: 700;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .btn-primary:hover {
-            background-color: #e6c200;
-            transform: translateY(-1px);
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: var(--text-dark);
         }
 
-        /* Scroll Animation Styles */
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .nav-blur {
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        .glass-card:hover {
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+            transform: translateY(-4px);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-teal) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
+        }
+
         .scroll-animate {
             opacity: 0;
-            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-        }
-        .scroll-animate.visible {
-            opacity: 1;
-            transform: translateY(0) translateX(0);
-        }
-        .slide-left {
-            transform: translateX(-50px);
-        }
-        .slide-right {
-            transform: translateX(50px);
-        }
-        .slide-up {
-            transform: translateY(50px);
+            transform: translateY(30px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
         }
 
-        .profile-img-container {
-            width: 15rem;
-            height: 15rem;
-            min-width: 15rem;
+        .scroll-animate.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
+
+        .fade-in-left {
+            transform: translateX(-30px);
+        }
+
+        .fade-in-right {
+            transform: translateX(30px);
+        }
+
+        .profile-container {
+            position: relative;
+        }
+
+        .profile-container::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-teal));
+            border-radius: 50%;
+            z-index: -1;
+            animation: pulse-border 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+
+        .icon-wrapper {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            transition: all 0.3s ease;
+        }
+
+        .icon-wrapper:hover {
+            transform: rotate(5deg) scale(1.1);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(37, 99, 235, 0.1);
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--primary-blue);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+        }
+
         @media (max-width: 768px) {
-            .profile-img-container {
-                width: 10rem;
-                height: 10rem;
-                min-width: 10rem;
+            .scroll-animate {
+                transform: translateY(20px);
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="container mx-auto px-4 py-8 md:py-16">
-
-        <!-- Main Header Section -->
-        <header class="header-bg rounded-3xl shadow-xl overflow-hidden mb-16 relative scroll-animate slide-up">
-            <div class="relative z-10 flex flex-col md:flex-row items-center p-8 md:p-16 text-center md:text-left">
-
-                <div class="md:w-1/4 flex justify-center md:justify-start mb-8 md:mb-0">
-                    <!-- Profile Image -->
-                    <div class="profile-img-container rounded-full overflow-hidden border-4 border-primary shadow-2xl">
-                        <img src="/kith.jpeg" alt="Kithsiri Athulathmudali Portrait" class="w-full h-full object-cover">
-                    </div>
+    <!-- Navigation -->
+    <nav class="nav-blur fixed top-0 left-0 right-0 z-50">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="text-xl font-bold gradient-text">Kithsiri Athulathmudali</div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#about" class="text-gray-700 hover:text-blue-600 transition-colors font-medium">About</a>
+                    <a href="#experience" class="text-gray-700 hover:text-blue-600 transition-colors font-medium">Experience</a>
+                    <a href="#publications" class="text-gray-700 hover:text-blue-600 transition-colors font-medium">Books</a>
+                    <a href="#media" class="text-gray-700 hover:text-blue-600 transition-colors font-medium">Media</a>
+                    <a href="#contact" class="text-gray-700 hover:text-blue-600 transition-colors font-medium">Contact</a>
                 </div>
+            </div>
+        </div>
+    </nav>
 
-                <div class="md:w-3/4 text-center md:text-left">
-                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 leading-tight text-primary">
-                        Kithsiri Athulathmudali
-                    </h1>
-                    <p class="text-lg md:text-xl font-light text-gray-300">
-                        Entrepreneur, Author, and Diplomat
-                    </p>
-                    <div class="mt-4 flex flex-wrap justify-center md:justify-start space-x-4">
-                        <span class="text-primary text-sm bg-gray-800 px-3 py-1 rounded-full">B.Sc. Mechanical Engineering</span>
-                        <span class="text-primary text-sm bg-gray-800 px-3 py-1 rounded-full">M.B.A.</span>
-                        <span class="text-primary text-sm bg-gray-800 px-3 py-1 rounded-full">Former Ambassador</span>
+    <!-- Hero Section -->
+    <section class="pt-32 pb-20 px-6">
+        <div class="container mx-auto max-w-6xl">
+            <div class="glass-card rounded-3xl p-12 md:p-16 transition-all duration-300">
+                <div class="flex flex-col md:flex-row items-center gap-12">
+                    <div class="profile-container">
+                        <img src="/kith.jpeg" alt="Kithsiri Athulathmudali" class="w-48 h-48 rounded-full object-cover shadow-2xl">
+                    </div>
+                    <div class="flex-1 text-center md:text-left">
+                        <h1 class="text-5xl md:text-6xl font-bold mb-4 gradient-text">Kithsiri Athulathmudali</h1>
+                        <p class="text-2xl text-gray-600 mb-6">Entrepreneur, Author & Former Ambassador</p>
+                        <div class="flex flex-wrap gap-3 justify-center md:justify-start">
+                            <span class="tag">B.Sc. Mechanical Engineering</span>
+                            <span class="tag">M.B.A.</span>
+                            <span class="tag">Licensed Pilot</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </header>
+        </div>
+    </section>
 
-        <!-- About Section -->
-        <section id="about" class="scroll-animate fade-in">
-            <h2 class="text-4xl font-bold text-center mb-12 text-primary border-b-2 border-gold pb-2 mx-auto w-fit">About Me</h2>
-            <div class="max-w-4xl mx-auto text-lg text-center leading-relaxed card p-8 rounded-xl">
-                <p class="mb-4">
-                    Kithsiri Athulathmudali, also known as Keith, is a seasoned professional with a diverse background spanning entrepreneurship, authorship, and international diplomacy. With a keen interest in aviation, he holds a pilot's license and has taken on significant leadership roles across various industries. His career, which includes extensive time in the United States and serving as the Ambassador-designate of Sri Lanka to the State of Qatar, is a testament to his dedication to service and creating long-term value.
+    <!-- About Section -->
+    <section id="about" class="py-20 px-6 scroll-animate">
+        <div class="container mx-auto max-w-5xl">
+            <h2 class="text-4xl md:text-5xl font-bold text-center mb-12 gradient-text">About</h2>
+            <div class="glass-card rounded-2xl p-10 transition-all duration-300">
+                <p class="text-lg text-gray-700 leading-relaxed mb-6">
+                    Kithsiri Athulathmudali, also known as Keith, is a seasoned professional with a diverse background spanning entrepreneurship, authorship, and international diplomacy. With a keen interest in aviation, he holds a pilot's license and has taken on significant leadership roles across various industries.
                 </p>
-                <h3 class="text-xl font-bold text-gold mt-6 mb-3">Education Highlights</h3>
-                <ul class="list-none space-y-2 text-gray-300">
-                    <li class="flex justify-center md:justify-start items-center space-x-2 mx-auto w-fit">
-                        <i class="fas fa-university text-secondary"></i>
-                        <span>B.Sc. in Mechanical Engineering, Manchester University, UK</span>
-                    </li>
-                    <li class="flex justify-center md:justify-start items-center space-x-2 mx-auto w-fit">
-                        <i class="fas fa-university text-secondary"></i>
-                        <span>B.Sc. and MBA, California University, Long Beach, CA, USA</span>
-                    </li>
-                    <li class="flex justify-center md:justify-start items-center space-x-2 mx-auto w-fit">
-                        <i class="fas fa-school text-secondary"></i>
-                        <span>Alumnus of Nalanda College, Colombo</span>
-                    </li>
-                </ul>
-            </div>
-        </section>
+                <p class="text-lg text-gray-700 leading-relaxed mb-8">
+                    His career, which includes extensive time in the United States and serving as the Ambassador-designate of Sri Lanka to the State of Qatar, is a testament to his dedication to service and creating long-term value.
+                </p>
 
-        <!-- Experience Section -->
-        <section id="experience" class="mt-20">
-            <h2 class="text-4xl font-bold text-center mb-12 text-primary border-b-2 border-gold pb-2 mx-auto w-fit scroll-animate fade-in">Professional Journey</h2>
-            <div class="space-y-12">
-                <!-- Job 1: Ambassador -->
-                <div class="card p-8 rounded-xl shadow-lg md:flex md:items-start space-x-8 scroll-animate fade-in-left">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-passport text-5xl text-primary"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-2xl font-bold text-white mb-1">Ambassador of Sri Lanka to Qatar</h3>
-                        <p class="text-sm text-gray-400 mb-3">2019 - 2020</p>
-                        <p class="text-gray-300 leading-relaxed">Key diplomatic role focused on strengthening **bilateral relations**, promoting **trade and investment**, and ensuring the welfare and rights of the large Sri Lankan expatriate community in Qatar.</p>
-                    </div>
-                </div>
-
-                <!-- Job 2: Honeywell -->
-                <div class="card p-8 rounded-xl shadow-lg md:flex md:items-start space-x-8 scroll-animate fade-in-right">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-cogs text-5xl text-primary"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-2xl font-bold text-white mb-1">Managing Director, Asia Pacific</h3>
-                        <p class="text-sm text-gray-400 mb-3">Honeywell International | Singapore</p>
-                        <p class="text-gray-300 leading-relaxed">Oversaw massive regional operations, notably establishing and managing a **global healthcare business unit**. Instrumental in strategic growth across 35 countries, showcasing expertise in international business development and leadership.</p>
-                    </div>
-                </div>
-
-                <!-- Job 3: Entrepreneurship -->
-                <div class="card p-8 rounded-xl shadow-lg md:flex md:items-start space-x-8 scroll-animate fade-in-left">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-lightbulb text-5xl text-primary"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-2xl font-bold text-white mb-1">Founder & CEO</h3>
-                        <p class="text-sm text-gray-400 mb-3">Various Ventures (EggSystems, Healthcare Facilities)</p>
-                        <p class="text-gray-300 leading-relaxed">Recognized as **'Entrepreneur of the Year'** (2001, Singapore). Founded a successful technology systems integration firm and established multiple highly-rated Alzheimer's compassionate care facilities in Dallas, Texas.</p>
+                <div class="border-t border-gray-200 pt-8">
+                    <h3 class="text-2xl font-semibold mb-6 text-blue-900">Education</h3>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-graduation-cap text-blue-600 text-xl mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-gray-800">B.Sc. Mechanical Engineering</p>
+                                <p class="text-gray-600">Manchester University, UK</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-graduation-cap text-blue-600 text-xl mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-gray-800">B.Sc. & M.B.A.</p>
+                                <p class="text-gray-600">California University, Long Beach</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-school text-blue-600 text-xl mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-gray-800">Alumnus</p>
+                                <p class="text-gray-600">Nalanda College, Colombo</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- Authored Works Section -->
-        <section id="publications" class="mt-20">
-            <h2 class="text-4xl font-bold text-center mb-12 text-primary border-b-2 border-gold pb-2 mx-auto w-fit scroll-animate fade-in">Authored Works</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Experience Section -->
+    <section id="experience" class="py-20 px-6">
+        <div class="container mx-auto max-w-6xl">
+            <h2 class="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text scroll-animate">Professional Journey</h2>
 
-                <!-- Book 1: Simple Happiness -->
-                <div class="card flex flex-col justify-between p-6 rounded-xl scroll-animate fade-in-left">
-                    <div>
-                        <h3 class="text-xl font-bold text-white mb-2">Simple Happiness: Smiles Beyond Possessions</h3>
-                        <p class="text-sm text-gray-400 mb-4">A guide to finding true contentment by looking beyond material wealth and focusing on internal well-being and life's simple pleasures.</p>
+            <div class="space-y-8">
+                <!-- Ambassador Role -->
+                <div class="glass-card rounded-2xl p-8 transition-all duration-300 scroll-animate fade-in-left">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="icon-wrapper flex-shrink-0">
+                            <i class="fas fa-globe-americas text-3xl text-blue-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Ambassador of Sri Lanka to Qatar</h3>
+                            <p class="text-blue-600 font-medium mb-4">2019 - 2020</p>
+                            <p class="text-gray-700 leading-relaxed">
+                                Key diplomatic role focused on strengthening bilateral relations, promoting trade and investment, and ensuring the welfare and rights of the large Sri Lankan expatriate community in Qatar.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Honeywell Role -->
+                <div class="glass-card rounded-2xl p-8 transition-all duration-300 scroll-animate fade-in-right">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="icon-wrapper flex-shrink-0">
+                            <i class="fas fa-building text-3xl text-blue-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Managing Director, Asia Pacific</h3>
+                            <p class="text-blue-600 font-medium mb-4">Honeywell International | Singapore</p>
+                            <p class="text-gray-700 leading-relaxed">
+                                Oversaw massive regional operations, notably establishing and managing a global healthcare business unit. Instrumental in strategic growth across 35 countries, showcasing expertise in international business development and leadership.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Entrepreneurship -->
+                <div class="glass-card rounded-2xl p-8 transition-all duration-300 scroll-animate fade-in-left">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="icon-wrapper flex-shrink-0">
+                            <i class="fas fa-rocket text-3xl text-blue-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Founder & CEO</h3>
+                            <p class="text-blue-600 font-medium mb-4">Various Ventures | Singapore & Dallas, TX</p>
+                            <p class="text-gray-700 leading-relaxed">
+                                Recognized as 'Entrepreneur of the Year' (2001, Singapore). Founded a successful technology systems integration firm and established multiple highly-rated Alzheimer's compassionate care facilities in Dallas, Texas.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Publications Section -->
+    <section id="publications" class="py-20 px-6">
+        <div class="container mx-auto max-w-6xl">
+            <h2 class="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text scroll-animate">Published Works</h2>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Book 1 -->
+                <div class="glass-card rounded-xl p-6 flex flex-col transition-all duration-300 scroll-animate">
+                    <div class="flex-1">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                            <i class="fas fa-book text-blue-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3">Simple Happiness</h3>
+                        <p class="text-gray-600 text-sm mb-4">Smiles Beyond Possessions. A guide to finding true contentment beyond material wealth.</p>
                     </div>
                     <div>
-                        <div id="summarize-output-1" class="hidden mb-4 bg-gray-800 rounded-lg p-3">
-                            <p id="summarize-output-text-1" class="text-sm text-gray-200 italic"></p>
+                        <div id="summarize-output-1" class="hidden mb-3 p-3 bg-blue-50 rounded-lg">
+                            <p id="summarize-output-text-1" class="text-sm text-gray-700 italic"></p>
                             <div id="summarize-output-audio-1" class="mt-2"></div>
                         </div>
-                        <div class="flex flex-col space-y-2">
-                             <a href="https://www.amazon.com/Simple-Happiness-Smiles-Beyond-Possessions/dp/B0FR9FSWFC/" target="_blank" class="text-primary hover:text-white font-semibold text-sm">View on Amazon &rarr;</a>
-                             <button onclick="callGemini('Summarize the book Simple Happiness: Smiles Beyond Possessions by Kithsiri Athulathmudali', true, 1)" class="btn-primary px-4 py-2 rounded-full text-sm">Get AI Summary</button>
+                        <div class="space-y-2">
+                            <a href="https://www.amazon.com/Simple-Happiness-Smiles-Beyond-Possessions/dp/B0FR9FSWFC/" target="_blank" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                                <i class="fab fa-amazon"></i> View on Amazon
+                            </a>
+                            <button onclick="callGemini('Summarize the book Simple Happiness: Smiles Beyond Possessions by Kithsiri Athulathmudali', true, 1)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
+                                <i class="fas fa-magic"></i> AI Summary
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Book 2: Profits with Purpose -->
-                <div class="card p-6 rounded-xl scroll-animate fade-in-left" style="transition-delay: 0.1s;">
-                    <div>
-                        <h3 class="text-xl font-bold text-white mb-2">Profits with Purpose</h3>
-                        <p class="text-sm text-gray-400 mb-4">Religion-Inspired Values in Business. Explores how faith and ethical values can be integrated into business leadership for sustainable success.</p>
+                <!-- Book 2 -->
+                <div class="glass-card rounded-xl p-6 flex flex-col transition-all duration-300 scroll-animate">
+                    <div class="flex-1">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                            <i class="fas fa-book text-blue-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3">Profits with Purpose</h3>
+                        <p class="text-gray-600 text-sm mb-4">Religion-Inspired Values in Business. Integrating faith and ethical values into business leadership.</p>
                     </div>
                     <div>
-                        <div id="summarize-output-2" class="hidden mb-4 bg-gray-800 rounded-lg p-3">
-                            <p id="summarize-output-text-2" class="text-sm text-gray-200 italic"></p>
+                        <div id="summarize-output-2" class="hidden mb-3 p-3 bg-blue-50 rounded-lg">
+                            <p id="summarize-output-text-2" class="text-sm text-gray-700 italic"></p>
                             <div id="summarize-output-audio-2" class="mt-2"></div>
                         </div>
-                        <div class="flex flex-col space-y-2">
-                            <a href="https://www.amazon.com/Profits-Purpose-Religion-Inspired-Values-Business/dp/B0FKN6CJ1W/" target="_blank" class="text-primary hover:text-white font-semibold text-sm">View on Amazon &rarr;</a>
-                            <button onclick="callGemini('Summarize the book Profits with Purpose: Religion-Inspired Values in Business by Kithsiri Athulathmudali', true, 2)" class="btn-primary px-4 py-2 rounded-full text-sm">Get AI Summary</button>
+                        <div class="space-y-2">
+                            <a href="https://www.amazon.com/Profits-Purpose-Religion-Inspired-Values-Business/dp/B0FKN6CJ1W/" target="_blank" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                                <i class="fab fa-amazon"></i> View on Amazon
+                            </a>
+                            <button onclick="callGemini('Summarize the book Profits with Purpose: Religion-Inspired Values in Business by Kithsiri Athulathmudali', true, 2)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
+                                <i class="fas fa-magic"></i> AI Summary
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Book 3: Keepers & Seekers -->
-                <div class="card p-6 rounded-xl scroll-animate fade-in-right" style="transition-delay: 0.2s;">
-                    <div>
-                        <h3 class="text-xl font-bold text-white mb-2">Keepers & Seekers</h3>
-                        <p class="text-sm text-gray-400 mb-4">How to find a compatible partner. A practical guide to navigating modern relationships and finding a partner who shares your values and life goals.</p>
+                <!-- Book 3 -->
+                <div class="glass-card rounded-xl p-6 flex flex-col transition-all duration-300 scroll-animate">
+                    <div class="flex-1">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                            <i class="fas fa-book text-blue-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3">Keepers & Seekers</h3>
+                        <p class="text-gray-600 text-sm mb-4">How to find a compatible partner. A practical guide to navigating modern relationships.</p>
                     </div>
                     <div>
-                        <div id="summarize-output-3" class="hidden mb-4 bg-gray-800 rounded-lg p-3">
-                            <p id="summarize-output-text-3" class="text-sm text-gray-200 italic"></p>
+                        <div id="summarize-output-3" class="hidden mb-3 p-3 bg-blue-50 rounded-lg">
+                            <p id="summarize-output-text-3" class="text-sm text-gray-700 italic"></p>
                             <div id="summarize-output-audio-3" class="mt-2"></div>
                         </div>
-                        <div class="flex flex-col space-y-2">
-                            <a href="https://www.amazon.com/Keepers-Seekers-finding-compatible-partner/dp/B0FP9B75T4/" target="_blank" class="text-primary hover:text-white font-semibold text-sm">View on Amazon &rarr;</a>
-                            <button onclick="callGemini('Summarize the book Keepers & Seekers: How to find a compatible partner by Kithsiri Athulathmudali', true, 3)" class="btn-primary px-4 py-2 rounded-full text-sm">Get AI Summary</button>
+                        <div class="space-y-2">
+                            <a href="https://www.amazon.com/Keepers-Seekers-finding-compatible-partner/dp/B0FP9B75T4/" target="_blank" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                                <i class="fab fa-amazon"></i> View on Amazon
+                            </a>
+                            <button onclick="callGemini('Summarize the book Keepers & Seekers: How to find a compatible partner by Kithsiri Athulathmudali', true, 3)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
+                                <i class="fas fa-magic"></i> AI Summary
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Book 4: Networking Edge -->
-                <div class="card p-6 rounded-xl scroll-animate fade-in-right" style="transition-delay: 0.3s;">
-                    <div>
-                        <h3 class="text-xl font-bold text-white mb-2">Networking Edge</h3>
-                        <p class="text-sm text-gray-400 mb-4">101 Lessons for sales professionals. Provides essential tips and strategies for building and maintaining professional relationships, crucial for success.</p>
+                <!-- Book 4 -->
+                <div class="glass-card rounded-xl p-6 flex flex-col transition-all duration-300 scroll-animate">
+                    <div class="flex-1">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                            <i class="fas fa-book text-blue-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3">Networking Edge</h3>
+                        <p class="text-gray-600 text-sm mb-4">101 Lessons for sales professionals. Essential tips for building professional relationships.</p>
                     </div>
-                     <div>
-                        <div id="summarize-output-4" class="hidden mb-4 bg-gray-800 rounded-lg p-3">
-                            <p id="summarize-output-text-4" class="text-sm text-gray-200 italic"></p>
+                    <div>
+                        <div id="summarize-output-4" class="hidden mb-3 p-3 bg-blue-50 rounded-lg">
+                            <p id="summarize-output-text-4" class="text-sm text-gray-700 italic"></p>
                             <div id="summarize-output-audio-4" class="mt-2"></div>
                         </div>
-                        <div class="flex flex-col space-y-2">
-                            <a href="https://www.amazon.com/Networking-Edge-101-sales-professionals/dp/B0FBKRM12S/" target="_blank" class="text-primary hover:text-white font-semibold text-sm">View on Amazon &rarr;</a>
-                            <button onclick="callGemini('Summarize the book Networking Edge: 101 lessons for sales professionals by Kithsiri Athulathmudali', true, 4)" class="btn-primary px-4 py-2 rounded-full text-sm">Get AI Summary</button>
+                        <div class="space-y-2">
+                            <a href="https://www.amazon.com/Networking-Edge-101-sales-professionals/dp/B0FBKRM12S/" target="_blank" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                                <i class="fab fa-amazon"></i> View on Amazon
+                            </a>
+                            <button onclick="callGemini('Summarize the book Networking Edge: 101 lessons for sales professionals by Kithsiri Athulathmudali', true, 4)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
+                                <i class="fas fa-magic"></i> AI Summary
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- Media Section -->
-        <section id="media" class="mt-20">
-            <h2 class="text-4xl font-bold text-center mb-12 text-primary border-b-2 border-gold pb-2 mx-auto w-fit scroll-animate fade-in">Podcasts & Digital Media</h2>
+    <!-- Media Section -->
+    <section id="media" class="py-20 px-6">
+        <div class="container mx-auto max-w-6xl">
+            <h2 class="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text scroll-animate">Podcasts & Media</h2>
+
             <div class="grid md:grid-cols-2 gap-8">
                 <!-- Podcast 1 -->
-                <div class="card p-8 rounded-xl scroll-animate fade-in-left">
-                    <div class="flex items-center mb-4">
-                        <i class="fas fa-microphone-alt text-4xl text-secondary mr-4"></i>
-                        <h3 class="text-2xl font-bold text-white">Employee Retention Across Enterprises</h3>
+                <div class="glass-card rounded-2xl p-8 transition-all duration-300 scroll-animate fade-in-left">
+                    <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-teal-500 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fas fa-microphone-alt text-white text-2xl"></i>
                     </div>
-                    <p class="text-gray-300 text-base mb-4">
-                        A podcast dedicated to exploring how organizations across the U.S. are keeping their best people in today's rapidly changing workplace. The series focuses on strengthening the bonds with employees through real-world strategies and innovative practices.
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Employee Retention Across Enterprises</h3>
+                    <p class="text-gray-700 leading-relaxed">
+                        A podcast series exploring how organizations across the U.S. are keeping their best people in today's rapidly changing workplace, focusing on strengthening employee bonds through innovative strategies.
                     </p>
                 </div>
-                <!-- Podcast 2 & YouTube -->
-                <div class="card p-8 rounded-xl scroll-animate fade-in-right">
-                    <div class="flex items-center mb-4">
-                        <i class="fab fa-youtube text-4xl text-secondary mr-4"></i>
-                        <h3 class="text-2xl font-bold text-white">The Networking Edge (Podcast & YouTube)</h3>
+
+                <!-- Podcast 2 -->
+                <div class="glass-card rounded-2xl p-8 transition-all duration-300 scroll-animate fade-in-right">
+                    <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fab fa-youtube text-white text-2xl"></i>
                     </div>
-                    <p class="text-gray-300 text-base mb-4">
-                        Explore the art and science of building meaningful professional relationships based on the principles in his book. Features insights, tips, and interviews designed to help you succeed in your career.
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">The Networking Edge</h3>
+                    <p class="text-gray-700 leading-relaxed mb-6">
+                        Explore the art and science of building meaningful professional relationships. Features insights, tips, and interviews designed to help you succeed in your career.
                     </p>
-                    <a href="https://www.youtube.com/@NetworkingEdge-Podcast" target="_blank" class="btn-primary inline-block px-6 py-2 rounded-full mt-4">
-                        Visit YouTube Channel
+                    <a href="https://www.youtube.com/@NetworkingEdge-Podcast" target="_blank" class="btn-primary text-white px-6 py-3 rounded-lg inline-flex items-center gap-2 font-medium">
+                        <i class="fab fa-youtube"></i> Visit Channel
                     </a>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
+    <!-- AI Assistant Section -->
+    <section id="contact" class="py-20 px-6">
+        <div class="container mx-auto max-w-4xl">
+            <div class="glass-card rounded-2xl p-10 transition-all duration-300 scroll-animate">
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-robot text-white text-2xl"></i>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold gradient-text mb-3">AI Assistant</h2>
+                    <p class="text-gray-600">Ask about Kithsiri's work, experience, or philosophy</p>
+                </div>
 
-        <!-- AI Assistant Section -->
-        <section id="contact" class="mt-20 scroll-animate fade-in">
-            <h2 class="text-4xl font-bold text-center mb-12 text-primary border-b-2 border-gold pb-2 mx-auto w-fit">Ask Kithsiri's AI Assistant</h2>
-            <div class="card max-w-3xl mx-auto p-8 rounded-xl">
-                <p class="text-center text-gray-300 mb-6">Ask about Kithsiri Athulathmudali's work, experience, or philosophy.</p>
-                <div class="flex flex-col space-y-4">
-                    <textarea id="user-question-input" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-primary" rows="3" placeholder="e.g., 'What was Kithsiri's role at Honeywell?' or 'What is his philosophy on business?'"></textarea>
-                    <button id="ask-button" onclick="callGemini(document.getElementById('user-question-input').value, false, null)" class="btn-primary w-full p-3 rounded-lg font-semibold text-lg">
-                        Submit Query
+                <div class="space-y-4">
+                    <textarea id="user-question-input" class="w-full p-4 rounded-xl bg-white border-2 border-gray-200 focus:border-blue-500 focus:outline-none text-gray-800 transition-colors" rows="4" placeholder="e.g., 'What was Kithsiri's role at Honeywell?' or 'What is his philosophy on business?'"></textarea>
+
+                    <button onclick="callGemini(document.getElementById('user-question-input').value, false, null)" class="btn-primary w-full text-white px-6 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-3">
+                        <i class="fas fa-paper-plane"></i> Ask Question
                     </button>
                 </div>
-                <div id="loading-indicator" class="hidden text-center mt-4">
-                    <p class="text-primary animate-pulse">Thinking...</p>
+
+                <div id="loading-indicator" class="hidden text-center mt-6">
+                    <div class="inline-flex items-center gap-3 text-blue-600">
+                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <span class="ml-2 font-medium">Thinking...</span>
+                    </div>
                 </div>
-                <div id="ask-output" class="hidden mt-6 border-t border-gray-700 pt-4">
-                    <p class="text-md font-semibold text-primary mb-2">Response:</p>
-                    <p id="ask-output-text" class="text-gray-200 whitespace-pre-wrap leading-relaxed"></p>
+
+                <div id="ask-output" class="hidden mt-8 p-6 bg-gradient-to-br from-blue-50 to-teal-50 rounded-xl border border-blue-100">
+                    <p class="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                        <i class="fas fa-comment-dots"></i> Response:
+                    </p>
+                    <p id="ask-output-text" class="text-gray-800 leading-relaxed whitespace-pre-wrap"></p>
                     <div id="ask-output-audio" class="mt-4 flex justify-end"></div>
                 </div>
             </div>
-        </section>
-
-    </div>
+        </div>
+    </section>
 
     <!-- Footer -->
-    <footer class="mt-24 pb-12 text-center text-gray-500">
-        <p>&copy; 2024 Kithsiri Athulathmudali. All rights reserved.</p>
+    <footer class="py-12 px-6 text-center">
+        <div class="container mx-auto">
+            <p class="text-gray-500">&copy; 2024 Kithsiri Athulathmudali. All rights reserved.</p>
+        </div>
     </footer>
 
 </body>
