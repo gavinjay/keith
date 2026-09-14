@@ -85,7 +85,7 @@
 
                 outputTextElement.innerText = text;
                 outputTextElement.classList.remove('hidden');
-                outputAudioElement.innerHTML = `<button onclick="readAloud('${text.replace(/'/g, "\\'")}', '${audioOutputId}')" class="text-blue-400 hover:text-blue-700 font-medium text-sm flex items-center gap-2"><i class="fas fa-volume-up"></i> Listen</button>`;
+                outputAudioElement.innerHTML = `<button onclick="readAloud('${text.replace(/'/g, "\\'")}', '${audioOutputId}')" class="text-amber-400 hover:text-amber-500 font-medium text-sm flex items-center gap-2"><i class="fas fa-volume-up"></i> Listen</button>`;
 
             } catch (error) {
                 console.error("Error during Gemini API call:", error);
@@ -228,6 +228,8 @@
             --primary-blue: #3b82f6;
             --primary-blue-dark: #2563eb;
             --accent-teal: #14b8a6;
+            --accent-gold: #f59e0b;
+            --accent-gold-dark: #d97706;
             --text-light: #f1f5f9;
             --text-gray: #cbd5e1;
             --bg-navy: #0f172a;
@@ -265,7 +267,7 @@
         }
 
         .gradient-text {
-            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-teal) 100%);
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-gold) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -308,7 +310,7 @@
             content: '';
             position: absolute;
             inset: -4px;
-            background: linear-gradient(135deg, var(--primary-blue), var(--accent-teal));
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-gold));
             border-radius: 50%;
             z-index: -1;
             animation: pulse-border 3s ease-in-out infinite;
@@ -345,12 +347,12 @@
         .tag {
             display: inline-block;
             padding: 0.5rem 1rem;
-            background: rgba(59, 130, 246, 0.15);
+            background: rgba(245, 158, 11, 0.15);
             border-radius: 9999px;
             font-size: 0.875rem;
             font-weight: 500;
-            color: var(--accent-teal);
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: var(--accent-gold);
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
         @media (max-width: 768px) {
@@ -368,11 +370,11 @@
             <div class="flex items-center justify-between">
                 <div class="text-xl font-bold gradient-text">Kithsiri Athulathmudali</div>
                 <div class="hidden md:flex items-center gap-8">
-                    <a href="#about" class="text-gray-300 hover:text-blue-400 transition-colors font-medium">About</a>
-                    <a href="#experience" class="text-gray-300 hover:text-blue-400 transition-colors font-medium">Experience</a>
-                    <a href="#publications" class="text-gray-300 hover:text-blue-400 transition-colors font-medium">Books</a>
-                    <a href="#media" class="text-gray-300 hover:text-blue-400 transition-colors font-medium">Media</a>
-                    <a href="#contact" class="text-gray-300 hover:text-blue-400 transition-colors font-medium">Contact</a>
+                    <a href="#about" class="text-gray-300 hover:text-amber-400 transition-colors font-medium">About</a>
+                    <a href="#experience" class="text-gray-300 hover:text-amber-400 transition-colors font-medium">Experience</a>
+                    <a href="#publications" class="text-gray-300 hover:text-amber-400 transition-colors font-medium">Books</a>
+                    <a href="#media" class="text-gray-300 hover:text-amber-400 transition-colors font-medium">Media</a>
+                    <a href="#contact" class="text-gray-300 hover:text-amber-400 transition-colors font-medium">Contact</a>
                 </div>
             </div>
         </div>
@@ -456,7 +458,7 @@
                         </div>
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-white mb-2">Ambassador of Sri Lanka to Qatar</h3>
-                            <p class="text-blue-400 font-medium mb-4">2019 - 2020</p>
+                            <p class="text-amber-400 font-medium mb-4">2019 - 2020</p>
                             <p class="text-gray-200 leading-relaxed">
                                 Key diplomatic role focused on strengthening bilateral relations, promoting trade and investment, and ensuring the welfare and rights of the large Sri Lankan expatriate community in Qatar.
                             </p>
@@ -472,7 +474,7 @@
                         </div>
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-white mb-2">Managing Director, Asia Pacific</h3>
-                            <p class="text-blue-400 font-medium mb-4">Honeywell International | Singapore</p>
+                            <p class="text-amber-400 font-medium mb-4">Honeywell International | Singapore</p>
                             <p class="text-gray-200 leading-relaxed">
                                 Oversaw massive regional operations, notably establishing and managing a global healthcare business unit. Instrumental in strategic growth across 35 countries, showcasing expertise in international business development and leadership.
                             </p>
@@ -488,7 +490,7 @@
                         </div>
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-white mb-2">Founder & CEO</h3>
-                            <p class="text-blue-400 font-medium mb-4">Various Ventures | Singapore & Dallas, TX</p>
+                            <p class="text-amber-400 font-medium mb-4">Various Ventures | Singapore & Dallas, TX</p>
                             <p class="text-gray-200 leading-relaxed">
                                 Recognized as 'Entrepreneur of the Year' (2001, Singapore). Founded a successful technology systems integration firm and established multiple highly-rated Alzheimer's compassionate care facilities in Dallas, Texas.
                             </p>
@@ -520,10 +522,10 @@
                             <div id="summarize-output-audio-1" class="mt-2"></div>
                         </div>
                         <div class="space-y-2">
-                            <a href="https://www.amazon.com/Simple-Happiness-Smiles-Beyond-Possessions/dp/B0FR9FSWFC/" target="_blank" class="text-blue-400 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                            <a href="https://www.amazon.com/Simple-Happiness-Smiles-Beyond-Possessions/dp/B0FR9FSWFC/" target="_blank" class="text-amber-400 hover:text-amber-500 font-medium text-sm flex items-center gap-2">
                                 <i class="fab fa-amazon"></i> View on Amazon
                             </a>
-                            <button onclick="callGemini('Summarize the book Simple Happiness: Smiles Beyond Possessions by Kithsiri Athulathmudali', true, 1)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
+                            <button onclick="callGemini('Summarize the book Simple Happiness: Smiles Beyond Possessions by Kithsiri Athulathmudali', true, 1)" class="text-amber-500 hover:text-amber-600 font-medium text-sm flex items-center gap-2">
                                 <i class="fas fa-magic"></i> AI Summary
                             </button>
                         </div>
@@ -545,10 +547,10 @@
                             <div id="summarize-output-audio-2" class="mt-2"></div>
                         </div>
                         <div class="space-y-2">
-                            <a href="https://www.amazon.com/Profits-Purpose-Religion-Inspired-Values-Business/dp/B0FKN6CJ1W/" target="_blank" class="text-blue-400 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                            <a href="https://www.amazon.com/Profits-Purpose-Religion-Inspired-Values-Business/dp/B0FKN6CJ1W/" target="_blank" class="text-amber-400 hover:text-amber-500 font-medium text-sm flex items-center gap-2">
                                 <i class="fab fa-amazon"></i> View on Amazon
                             </a>
-                            <button onclick="callGemini('Summarize the book Profits with Purpose: Religion-Inspired Values in Business by Kithsiri Athulathmudali', true, 2)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
+                            <button onclick="callGemini('Summarize the book Profits with Purpose: Religion-Inspired Values in Business by Kithsiri Athulathmudali', true, 2)" class="text-amber-500 hover:text-amber-600 font-medium text-sm flex items-center gap-2">
                                 <i class="fas fa-magic"></i> AI Summary
                             </button>
                         </div>
@@ -570,10 +572,10 @@
                             <div id="summarize-output-audio-3" class="mt-2"></div>
                         </div>
                         <div class="space-y-2">
-                            <a href="https://www.amazon.com/Keepers-Seekers-finding-compatible-partner/dp/B0FP9B75T4/" target="_blank" class="text-blue-400 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                            <a href="https://www.amazon.com/Keepers-Seekers-finding-compatible-partner/dp/B0FP9B75T4/" target="_blank" class="text-amber-400 hover:text-amber-500 font-medium text-sm flex items-center gap-2">
                                 <i class="fab fa-amazon"></i> View on Amazon
                             </a>
-                            <button onclick="callGemini('Summarize the book Keepers & Seekers: How to find a compatible partner by Kithsiri Athulathmudali', true, 3)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
+                            <button onclick="callGemini('Summarize the book Keepers & Seekers: How to find a compatible partner by Kithsiri Athulathmudali', true, 3)" class="text-amber-500 hover:text-amber-600 font-medium text-sm flex items-center gap-2">
                                 <i class="fas fa-magic"></i> AI Summary
                             </button>
                         </div>
@@ -595,10 +597,10 @@
                             <div id="summarize-output-audio-4" class="mt-2"></div>
                         </div>
                         <div class="space-y-2">
-                            <a href="https://www.amazon.com/Networking-Edge-101-sales-professionals/dp/B0FBKRM12S/" target="_blank" class="text-blue-400 hover:text-blue-700 font-medium text-sm flex items-center gap-2">
+                            <a href="https://www.amazon.com/Networking-Edge-101-sales-professionals/dp/B0FBKRM12S/" target="_blank" class="text-amber-400 hover:text-amber-500 font-medium text-sm flex items-center gap-2">
                                 <i class="fab fa-amazon"></i> View on Amazon
                             </a>
-                            <button onclick="callGemini('Summarize the book Networking Edge: 101 lessons for sales professionals by Kithsiri Athulathmudali', true, 4)" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-2">
+                            <button onclick="callGemini('Summarize the book Networking Edge: 101 lessons for sales professionals by Kithsiri Athulathmudali', true, 4)" class="text-amber-500 hover:text-amber-600 font-medium text-sm flex items-center gap-2">
                                 <i class="fas fa-magic"></i> AI Summary
                             </button>
                         </div>
